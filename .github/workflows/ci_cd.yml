@@ -1,0 +1,127 @@
+name: AECIP Cloud CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REPOSITORY_API: aecip-api
+  ECR_REPOSITORY_DASHBOARD: aecip-dashboard
+  ECS_CLUSTER: aecip-prod-cluster
+  ECS_SERVICE_API: aecip-prod-api-service
+  ECS_SERVICE_DASHBOARD: aecip-prod-dash-service
+
+jobs:
+  # ─── Job 1: Test & Code Quality ──────────────────────────────────────────────
+  test-and-lint:
+    name: Code Quality & Unit Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install flake8 pytest
+
+      - name: Lint with Flake8
+        run: |
+          # Stop the build if there are Python syntax errors or undefined names
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics --exclude=venv,.git,__pycache__
+
+      - name: Run Unit Tests
+        run: |
+          python -m unittest discover -s tests -p "test_*.py"
+
+  # ─── Job 2: Terraform Validation ────────────────────────────────────────────
+  terraform-check:
+    name: Terraform Format & Validation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.7.0
+
+      - name: Terraform Format Check
+        run: terraform fmt -check
+        working-directory: ./terraform
+
+      - name: Terraform Init (Validation Mode)
+        run: terraform init -backend=false
+        working-directory: ./terraform
+
+      - name: Terraform Validate
+        run: terraform validate
+        working-directory: ./terraform
+
+  # ─── Job 3: Build, Push to ECR, and Deploy to ECS Fargate ────────────────────
+  build-and-deploy:
+    name: Build Containers & Deploy to AWS ECS
+    runs-on: ubuntu-latest
+    needs: [test-and-lint, terraform-check]
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build, Tag, and Push API Container to Amazon ECR
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY_API:$IMAGE_TAG -f Dockerfile.api .
+          docker tag $ECR_REGISTRY/$ECR_REPOSITORY_API:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY_API:latest
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY_API:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY_API:latest
+
+      - name: Build, Tag, and Push Dashboard Container to Amazon ECR
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY_DASHBOARD:$IMAGE_TAG -f Dockerfile.dashboard .
+          docker tag $ECR_REGISTRY/$ECR_REPOSITORY_DASHBOARD:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY_DASHBOARD:latest
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY_DASHBOARD:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY_DASHBOARD:latest
+
+      - name: Deploy Updated Images to Amazon ECS Services
+        run: |
+          echo "Triggering rolling deployment on ECS cluster: $ECS_CLUSTER..."
+          aws ecs update-service --cluster $ECS_CLUSTER --service $ECS_SERVICE_API --force-new-deployment
+          aws ecs update-service --cluster $ECS_CLUSTER --service $ECS_SERVICE_DASHBOARD --force-new-deployment
+
+      - name: Verify Deployment Health
+        run: |
+          echo "Waiting for ECS services to reach stable running state..."
+          aws ecs wait services-stable --cluster $ECS_CLUSTER --services $ECS_SERVICE_API $ECS_SERVICE_DASHBOARD
+          echo "AECIP deployment on AWS ECS completed successfully!"
