@@ -16,6 +16,12 @@ resource "aws_instance" "aecip_server" {
               #!/bin/bash
               set -e
 
+              # 0. Add 2GB swap so t3.micro (1GB RAM) never runs out of memory during Docker build
+              fallocate -l 2G /swapfile
+              chmod 600 /swapfile
+              mkswap /swapfile
+              swapon /swapfile
+
               # 1. Update OS packages and install Docker dependencies
               apt-get update -y
               apt-get install -y ca-certificates curl gnupg git
