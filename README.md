@@ -111,6 +111,42 @@ terraform apply
 
 ---
 
+## 📸 Screenshots
+
+### ☁️ AWS Infrastructure & Docker Containers
+| AWS EC2 (`aecip-prod-server`) | AWS S3 Artifacts Bucket |
+| :---: | :---: |
+| ![AWS EC2](docs/screenshots/AWS_dashboard_1.png) | ![AWS S3](docs/screenshots/AWS_dashboard_2.png) |
+
+| Docker Desktop Containers | Container Health & API Check |
+| :---: | :---: |
+| ![Docker Dashboard](docs/screenshots/docker_dashboard.png) | ![Docker Health](docs/screenshots/docker_health.png) |
+
+### 📊 Dashboard Initialization & Executive Overview
+| Platform Initialization | Dataset Processing |
+| :---: | :---: |
+| ![Initialization](docs/screenshots/AECIP_initialization.png) | ![Dataset Process](docs/screenshots/AECIP_dataset_process.png) |
+
+| Executive Overview | Customer Segments & Trends | Strategic Drivers |
+| :---: | :---: | :---: |
+| ![Overview 1](docs/screenshots/AECIP_overview.png) | ![Overview 2](docs/screenshots/AECIP_overview_2.png) | ![Overview 3](docs/screenshots/AECIP_overview_3.png) |
+
+### 🧠 AI Insights & Explainable AI (XAI)
+| AI Insights | Customer Risk Drivers | Risk Gauge | Explainable AI (XAI) |
+| :---: | :---: | :---: | :---: |
+| ![Insights 1](docs/screenshots/AECIP_insights.png) | ![Insights 2](docs/screenshots/AECIP_insights_2.png) | ![Insights 3](docs/screenshots/AECIP_insights_3.png) | ![XAI Explainer](docs/screenshots/AECIP_AIExplainer.png) |
+
+### 🎯 Decision Center & Conversational AI Assistant
+| Decision Center (1) | Decision Center (2) | Decision Center (3) |
+| :---: | :---: | :---: |
+| ![Decision 1](docs/screenshots/AECIP_DecisionCenter_1.png) | ![Decision 2](docs/screenshots/AECIP_DecisionCenter_2.png) | ![Decision 3](docs/screenshots/AECIP_DecisionCenter_3.png) |
+
+| Decision Center (4) | Decision Center (5) | AI Assistant |
+| :---: | :---: | :---: |
+| ![Decision 4](docs/screenshots/AECIP_DecisionCenter_4.png) | ![Decision 5](docs/screenshots/AECIP_DecisionCenter_5.png) | ![AI Assistant](docs/screenshots/AECIP_AI_Assistant.png) |
+
+---
+
 ### Project Vision
 
 AECIP bridges the gap between machine learning and real-world enterprise ROI by delivering a self-healing, cloud-native platform that adapts autonomously to shifting customer behaviors.

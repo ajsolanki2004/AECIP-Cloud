@@ -10,7 +10,7 @@ resource "aws_s3_bucket" "artifacts" {
 
   tags = {
     Name        = "${var.project_name}-cloud-artifacts"
-    Description = "Storage for customer intelligence ML models (.pkl) and processed datasets"
+    Description = "Storage for customer intelligence ML models and processed datasets"
   }
 }
 
